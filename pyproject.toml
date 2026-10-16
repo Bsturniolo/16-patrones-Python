@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patrones-diseno-python"
+version = "1.0.0"
+description = "16 patrones de diseño (GoF) en Python 3.12, con un caso de comercio electrónico"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["patrones*"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+# Cada método que redefine uno de la base debe llevar ``@override`` (typing.override, 3.12).
+enable_error_code = ["explicit-override"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# pycodestyle (E/W), pyflakes (F), bugbear (B), pyupgrade (UP), simplify (SIM), reglas
+# propias de ruff (RUF) y pylint (PL).
+select = ["E", "F", "W", "B", "UP", "SIM", "RUF", "PL"]
+
+[tool.ruff.lint.per-file-ignores]
+# PLC0415 (import fuera del nivel superior): los estados del patrón State se crean entre sí
+# (Nuevo <-> Confirmado <-> Enviado <-> Entregado). Con un módulo por clase, importarlos a
+# nivel de módulo en ambos sentidos da ImportError por import circular, así que cada
+# transición importa su estado destino dentro del método. Es intencional y está explicado en
+# el docstring de ``estado_nuevo.py``.
+"patrones/comportamiento/state/estado_*.py" = ["PLC0415"]
+
+[tool.coverage.run]
+branch = true
+source = ["patrones", "main"]
+
+[tool.coverage.report]
+show_missing = true
+# El bloque ``if __name__ == "__main__":`` de cada demo se ejecuta en un subproceso
+# (``python -m patrones.<cat>.<paquete>.demo``, probado en test_factory.py) que coverage no mide.
+exclude_also = ['if __name__ == "__main__":']

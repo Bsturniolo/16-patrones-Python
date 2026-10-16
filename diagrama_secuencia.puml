@@ -1,0 +1,1101 @@
+@startuml Diagrama de Secuencia - Ejecución del Main
+
+title Diagrama de Secuencia - Sistema de Comercio Electrónico\nEjecución del método main() - 12 Patrones de Diseño
+
+actor Usuario
+participant Main
+participant DatabaseConnection <<Singleton>>
+participant ProductoFactory <<Factory>>
+participant Libro
+participant Electronico
+participant Tienda <<Observer>>
+participant Cliente1 <<Observer>>
+participant Cliente2 <<Observer>>
+participant Cliente3 <<Observer>>
+participant CarritoCompra1 <<Strategy>>
+participant CarritoCompra2 <<Strategy>>
+participant CarritoCompra3 <<Strategy>>
+participant PagoTarjeta <<Strategy>>
+participant PagoEfectivo <<Strategy>>
+participant PagoPayPal <<Strategy>>
+participant "ProductoDecorador" as Decorator <<Decorator>>
+participant "EnvolturaRegaloDecorador" as EnvolturaDecorador <<Decorator>>
+participant "SeguroDecorador" as SeguroDecorador <<Decorator>>
+participant "GarantiaExtendidaDecorador" as GarantiaDecorador <<Decorator>>
+participant "PedidoBuilder" as Builder <<Builder>>
+participant Pedido1 <<Builder>>
+participant Pedido2 <<Builder>>
+participant ValidadorStock <<Chain>>
+participant ValidadorDireccion <<Chain>>
+participant ValidadorMonto <<Chain>>
+participant ValidadorPago <<Chain>>
+participant SistemaDHL <<Adapter>>
+participant AdaptadorDHL <<Adapter>>
+participant SistemaFedEx <<Adapter>>
+participant AdaptadorFedEx <<Adapter>>
+participant SistemaCorreos <<Adapter>>
+participant AdaptadorCorreos <<Adapter>>
+participant RegistroPrototipos <<Prototype>>
+participant ProductoPrototype1 <<Prototype>>
+participant ProductoPrototype2 <<Prototype>>
+participant "Categoria" as CatElectronica <<Composite>>
+participant ProductoItem1 <<Composite>>
+participant ProductoItem2 <<Composite>>
+participant PaqueteProductos <<Composite>>
+participant "ProcesadorPedidoNacional" as ProcNacional <<Template>>
+participant "ProcesadorPedidoInternacional" as ProcInternacional <<Template>>
+participant "ProcesadorPedidoExpress" as ProcExpress <<Template>>
+participant "PedidoContext" as PedidoCtx <<State>>
+participant EstadoNuevo <<State>>
+participant EstadoConfirmado <<State>>
+participant EstadoEnviado <<State>>
+participant EstadoEntregado <<State>>
+participant EstadoCancelado <<State>>
+
+Usuario -> Main : ejecuta main()
+activate Main
+
+== 1. PATRÓN SINGLETON - Conexión a BD ==
+
+Main -> DatabaseConnection : getInstance()
+activate DatabaseConnection
+DatabaseConnection -> DatabaseConnection : crear instancia (si no existe)
+DatabaseConnection --> Main : db1
+deactivate DatabaseConnection
+
+Main -> DatabaseConnection : getInstance()
+activate DatabaseConnection
+DatabaseConnection --> Main : db2 (misma instancia)
+deactivate DatabaseConnection
+
+Main -> Main : verificar db1 == db2
+Main -> DatabaseConnection : query("SELECT * FROM usuarios")
+activate DatabaseConnection
+DatabaseConnection --> Main : ejecuta query
+deactivate DatabaseConnection
+
+== 2. PATRÓN FACTORY - Crear Productos ==
+
+Main -> ProductoFactory : crearLibro("Cien Años de Soledad", 25.99, "Gabriel García Márquez")
+activate ProductoFactory
+ProductoFactory -> Libro : new Libro(...)
+activate Libro
+Libro --> ProductoFactory : libro1
+deactivate Libro
+ProductoFactory --> Main : libro1
+deactivate ProductoFactory
+
+Main -> ProductoFactory : crearLibro("Don Quijote", 19.99, "Miguel de Cervantes")
+activate ProductoFactory
+ProductoFactory -> Libro : new Libro(...)
+activate Libro
+Libro --> ProductoFactory : libro2
+deactivate Libro
+ProductoFactory --> Main : libro2
+deactivate ProductoFactory
+
+Main -> ProductoFactory : crearElectronico("Laptop HP", 899.99, 24)
+activate ProductoFactory
+ProductoFactory -> Electronico : new Electronico(...)
+activate Electronico
+Electronico --> ProductoFactory : laptop
+deactivate Electronico
+ProductoFactory --> Main : laptop
+deactivate ProductoFactory
+
+Main -> ProductoFactory : crearElectronico("iPhone 15", 999.99, 12)
+activate ProductoFactory
+ProductoFactory -> Electronico : new Electronico(...)
+activate Electronico
+Electronico --> ProductoFactory : telefono
+deactivate Electronico
+ProductoFactory --> Main : telefono
+deactivate ProductoFactory
+
+Main -> Libro : mostrarInfo()
+activate Libro
+Libro --> Main : muestra info
+deactivate Libro
+
+Main -> Electronico : mostrarInfo()
+activate Electronico
+Electronico --> Main : muestra info
+deactivate Electronico
+
+== 3. PATRÓN OBSERVER - Sistema de Notificaciones ==
+
+Main -> Tienda : new Tienda("TechStore")
+activate Tienda
+Tienda --> Main : tienda
+deactivate Tienda
+
+Main -> Cliente1 : new Cliente("Juan Pérez")
+activate Cliente1
+Cliente1 --> Main : cliente1
+deactivate Cliente1
+
+Main -> Cliente2 : new Cliente("María López")
+activate Cliente2
+Cliente2 --> Main : cliente2
+deactivate Cliente2
+
+Main -> Cliente3 : new Cliente("Carlos Gómez")
+activate Cliente3
+Cliente3 --> Main : cliente3
+deactivate Cliente3
+
+Main -> Tienda : suscribir(cliente1)
+activate Tienda
+Tienda -> Tienda : agregar a lista
+Tienda --> Main : confirmación
+deactivate Tienda
+
+Main -> Tienda : suscribir(cliente2)
+activate Tienda
+Tienda -> Tienda : agregar a lista
+Tienda --> Main : confirmación
+deactivate Tienda
+
+Main -> Tienda : suscribir(cliente3)
+activate Tienda
+Tienda -> Tienda : agregar a lista
+Tienda --> Main : confirmación
+deactivate Tienda
+
+Main -> Tienda : nuevaOferta("50% descuento en laptops")
+activate Tienda
+Tienda -> Tienda : notificarClientes()
+Tienda -> Cliente1 : actualizar("Nueva oferta: 50% descuento en laptops")
+activate Cliente1
+Cliente1 --> Tienda : notificación recibida
+deactivate Cliente1
+Tienda -> Cliente2 : actualizar("Nueva oferta: 50% descuento en laptops")
+activate Cliente2
+Cliente2 --> Tienda : notificación recibida
+deactivate Cliente2
+Tienda -> Cliente3 : actualizar("Nueva oferta: 50% descuento en laptops")
+activate Cliente3
+Cliente3 --> Tienda : notificación recibida
+deactivate Cliente3
+Tienda --> Main : todos notificados
+deactivate Tienda
+
+Main -> Tienda : desuscribir(cliente2)
+activate Tienda
+Tienda -> Tienda : remover de lista
+Tienda --> Main : confirmación
+deactivate Tienda
+
+Main -> Tienda : nuevaOferta("Black Friday: Todo al 70% de descuento")
+activate Tienda
+Tienda -> Tienda : notificarClientes()
+Tienda -> Cliente1 : actualizar("Nueva oferta: Black Friday...")
+activate Cliente1
+Cliente1 --> Tienda : notificación recibida
+deactivate Cliente1
+Tienda -> Cliente3 : actualizar("Nueva oferta: Black Friday...")
+activate Cliente3
+Cliente3 --> Tienda : notificación recibida
+deactivate Cliente3
+note right: Cliente2 no recibe notificación\nporque fue desuscrito
+Tienda --> Main : notificados (solo 2)
+deactivate Tienda
+
+== 4. PATRÓN STRATEGY - Diferentes Formas de Pago ==
+
+group Carrito 1 - Pago con Tarjeta
+    Main -> CarritoCompra1 : new CarritoCompra()
+    activate CarritoCompra1
+    CarritoCompra1 --> Main : carrito1
+    deactivate CarritoCompra1
+
+    Main -> CarritoCompra1 : agregarProducto(libro1)
+    activate CarritoCompra1
+    CarritoCompra1 --> Main : producto agregado
+    deactivate CarritoCompra1
+
+    Main -> CarritoCompra1 : agregarProducto(laptop)
+    activate CarritoCompra1
+    CarritoCompra1 --> Main : producto agregado
+    deactivate CarritoCompra1
+
+    Main -> PagoTarjeta : new PagoTarjeta("4532-1234-5678-9012")
+    activate PagoTarjeta
+    PagoTarjeta --> Main : estrategia tarjeta
+    deactivate PagoTarjeta
+
+    Main -> CarritoCompra1 : setEstrategiaPago(pagoTarjeta)
+    activate CarritoCompra1
+    CarritoCompra1 --> Main : estrategia configurada
+    deactivate CarritoCompra1
+
+    Main -> CarritoCompra1 : checkout()
+    activate CarritoCompra1
+    CarritoCompra1 -> CarritoCompra1 : calcularTotal()
+    CarritoCompra1 -> Libro : mostrarInfo()
+    activate Libro
+    Libro --> CarritoCompra1 : info mostrada
+    deactivate Libro
+    CarritoCompra1 -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> CarritoCompra1 : info mostrada
+    deactivate Electronico
+    CarritoCompra1 -> PagoTarjeta : pagar(925.98)
+    activate PagoTarjeta
+    PagoTarjeta --> CarritoCompra1 : pago procesado
+    deactivate PagoTarjeta
+    CarritoCompra1 --> Main : compra completada
+    deactivate CarritoCompra1
+end
+
+group Carrito 2 - Pago en Efectivo
+    Main -> CarritoCompra2 : new CarritoCompra()
+    activate CarritoCompra2
+    CarritoCompra2 --> Main : carrito2
+    deactivate CarritoCompra2
+
+    Main -> CarritoCompra2 : agregarProducto(telefono)
+    activate CarritoCompra2
+    CarritoCompra2 --> Main : producto agregado
+    deactivate CarritoCompra2
+
+    Main -> CarritoCompra2 : agregarProducto(libro2)
+    activate CarritoCompra2
+    CarritoCompra2 --> Main : producto agregado
+    deactivate CarritoCompra2
+
+    Main -> PagoEfectivo : new PagoEfectivo()
+    activate PagoEfectivo
+    PagoEfectivo --> Main : estrategia efectivo
+    deactivate PagoEfectivo
+
+    Main -> CarritoCompra2 : setEstrategiaPago(pagoEfectivo)
+    activate CarritoCompra2
+    CarritoCompra2 --> Main : estrategia configurada
+    deactivate CarritoCompra2
+
+    Main -> CarritoCompra2 : checkout()
+    activate CarritoCompra2
+    CarritoCompra2 -> CarritoCompra2 : calcularTotal()
+    CarritoCompra2 -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> CarritoCompra2 : info mostrada
+    deactivate Electronico
+    CarritoCompra2 -> Libro : mostrarInfo()
+    activate Libro
+    Libro --> CarritoCompra2 : info mostrada
+    deactivate Libro
+    CarritoCompra2 -> PagoEfectivo : pagar(1019.98)
+    activate PagoEfectivo
+    PagoEfectivo -> PagoEfectivo : aplicar 5% descuento
+    PagoEfectivo --> CarritoCompra2 : pago procesado (968.98)
+    deactivate PagoEfectivo
+    CarritoCompra2 --> Main : compra completada
+    deactivate CarritoCompra2
+end
+
+group Carrito 3 - Pago con PayPal
+    Main -> CarritoCompra3 : new CarritoCompra()
+    activate CarritoCompra3
+    CarritoCompra3 --> Main : carrito3
+    deactivate CarritoCompra3
+
+    Main -> CarritoCompra3 : agregarProducto(laptop)
+    activate CarritoCompra3
+    CarritoCompra3 --> Main : producto agregado
+    deactivate CarritoCompra3
+
+    Main -> CarritoCompra3 : agregarProducto(telefono)
+    activate CarritoCompra3
+    CarritoCompra3 --> Main : producto agregado
+    deactivate CarritoCompra3
+
+    Main -> PagoPayPal : new PagoPayPal("usuario@email.com")
+    activate PagoPayPal
+    PagoPayPal --> Main : estrategia PayPal
+    deactivate PagoPayPal
+
+    Main -> CarritoCompra3 : setEstrategiaPago(pagoPayPal)
+    activate CarritoCompra3
+    CarritoCompra3 --> Main : estrategia configurada
+    deactivate CarritoCompra3
+
+    Main -> CarritoCompra3 : checkout()
+    activate CarritoCompra3
+    CarritoCompra3 -> CarritoCompra3 : calcularTotal()
+    CarritoCompra3 -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> CarritoCompra3 : info mostrada
+    deactivate Electronico
+    CarritoCompra3 -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> CarritoCompra3 : info mostrada
+    deactivate Electronico
+    CarritoCompra3 -> PagoPayPal : pagar(1899.98)
+    activate PagoPayPal
+    PagoPayPal --> CarritoCompra3 : pago procesado
+    deactivate PagoPayPal
+    CarritoCompra3 --> Main : compra completada
+    deactivate CarritoCompra3
+end
+
+== 5. PATRÓN DECORATOR - Agregar Funcionalidades ==
+
+group Producto Simple
+    Main -> ProductoFactory : crearElectronico("iPad Pro", 799.99, 12)
+    activate ProductoFactory
+    ProductoFactory -> Electronico : new Electronico(...)
+    activate Electronico
+    Electronico --> ProductoFactory : tablet
+    deactivate Electronico
+    ProductoFactory --> Main : tablet
+    deactivate ProductoFactory
+
+    Main -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> Main : info mostrada
+    deactivate Electronico
+
+    Main -> Electronico : getPrecio()
+    activate Electronico
+    Electronico --> Main : 799.99
+    deactivate Electronico
+end
+
+group Producto con Envoltura
+    Main -> EnvolturaDecorador : new EnvolturaRegaloDecorador(tablet)
+    activate EnvolturaDecorador
+    EnvolturaDecorador -> Decorator : super(tablet)
+    activate Decorator
+    Decorator --> EnvolturaDecorador : decorador creado
+    deactivate Decorator
+    EnvolturaDecorador --> Main : tabletConEnvoltura
+    deactivate EnvolturaDecorador
+
+    Main -> EnvolturaDecorador : mostrarInfo()
+    activate EnvolturaDecorador
+    EnvolturaDecorador -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> EnvolturaDecorador : info base
+    deactivate Electronico
+    EnvolturaDecorador -> EnvolturaDecorador : agregar info envoltura
+    EnvolturaDecorador --> Main : info completa
+    deactivate EnvolturaDecorador
+
+    Main -> EnvolturaDecorador : getPrecio()
+    activate EnvolturaDecorador
+    EnvolturaDecorador -> Electronico : getPrecio()
+    activate Electronico
+    Electronico --> EnvolturaDecorador : 799.99
+    deactivate Electronico
+    EnvolturaDecorador -> EnvolturaDecorador : + 3.50
+    EnvolturaDecorador --> Main : 803.49
+    deactivate EnvolturaDecorador
+end
+
+group Producto con Múltiples Decoradores
+    Main -> ProductoFactory : crearElectronico("MacBook Pro", 1499.99, 12)
+    activate ProductoFactory
+    ProductoFactory -> Electronico : new Electronico(...)
+    activate Electronico
+    Electronico --> ProductoFactory : laptopPremium
+    deactivate Electronico
+    ProductoFactory --> Main : laptopPremium
+    deactivate ProductoFactory
+
+    Main -> SeguroDecorador : new SeguroDecorador(laptopPremium)
+    activate SeguroDecorador
+    SeguroDecorador --> Main : laptopConSeguro
+    deactivate SeguroDecorador
+
+    Main -> GarantiaDecorador : new GarantiaExtendidaDecorador(laptopConSeguro, 24)
+    activate GarantiaDecorador
+    GarantiaDecorador --> Main : laptopConGarantia
+    deactivate GarantiaDecorador
+
+    Main -> EnvolturaDecorador : new EnvolturaRegaloDecorador(laptopConGarantia)
+    activate EnvolturaDecorador
+    EnvolturaDecorador --> Main : laptopCompleta
+    deactivate EnvolturaDecorador
+
+    Main -> EnvolturaDecorador : mostrarInfo()
+    activate EnvolturaDecorador
+    EnvolturaDecorador -> GarantiaDecorador : mostrarInfo()
+    activate GarantiaDecorador
+    GarantiaDecorador -> SeguroDecorador : mostrarInfo()
+    activate SeguroDecorador
+    SeguroDecorador -> Electronico : mostrarInfo()
+    activate Electronico
+    Electronico --> SeguroDecorador : info base
+    deactivate Electronico
+    SeguroDecorador --> GarantiaDecorador : + seguro
+    deactivate SeguroDecorador
+    GarantiaDecorador --> EnvolturaDecorador : + garantía
+    deactivate GarantiaDecorador
+    EnvolturaDecorador --> Main : + envoltura
+    deactivate EnvolturaDecorador
+
+    Main -> EnvolturaDecorador : getPrecio()
+    activate EnvolturaDecorador
+    EnvolturaDecorador -> GarantiaDecorador : getPrecio()
+    activate GarantiaDecorador
+    GarantiaDecorador -> SeguroDecorador : getPrecio()
+    activate SeguroDecorador
+    SeguroDecorador -> Electronico : getPrecio()
+    activate Electronico
+    Electronico --> SeguroDecorador : 1499.99
+    deactivate Electronico
+    SeguroDecorador -> SeguroDecorador : * 1.10 (seguro)
+    SeguroDecorador --> GarantiaDecorador : 1649.99
+    deactivate SeguroDecorador
+    GarantiaDecorador -> GarantiaDecorador : + 60.00 (garantía 24 meses)
+    GarantiaDecorador --> EnvolturaDecorador : 1709.99
+    deactivate GarantiaDecorador
+    EnvolturaDecorador -> EnvolturaDecorador : + 3.50 (envoltura)
+    EnvolturaDecorador --> Main : 1713.49
+    deactivate EnvolturaDecorador
+end
+
+== 6. PATRÓN BUILDER - Construir Pedidos ==
+
+group Pedido Simple
+    Main -> Main : crear List<Producto> productos1
+    Main -> Builder : new PedidoBuilder(productos1, "Calle Principal 123, Madrid")
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : conMetodoEnvio("Standard")
+    activate Builder
+    Builder --> Main : builder (fluent)
+    deactivate Builder
+
+    Main -> Builder : construir()
+    activate Builder
+    Builder -> Pedido1 : new Pedido(builder)
+    activate Pedido1
+    Pedido1 --> Builder : pedido1
+    deactivate Pedido1
+    Builder --> Main : pedido1
+    deactivate Builder
+
+    Main -> Pedido1 : mostrarResumen()
+    activate Pedido1
+    Pedido1 --> Main : resumen mostrado
+    deactivate Pedido1
+
+    Main -> Pedido1 : calcularTotal()
+    activate Pedido1
+    Pedido1 --> Main : total calculado
+    deactivate Pedido1
+end
+
+group Pedido Complejo
+    Main -> Main : crear List<Producto> productos2
+    Main -> Builder : new PedidoBuilder(productos2, "Avenida Libertad 456, Barcelona")
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : conMetodoEnvio("Express")
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : esRegalo(true)
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : conEnvolturaRegalo(true)
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : conMensajeRegalo("¡Feliz cumpleaños!")
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : conNotasEspeciales("Entregar por la mañana")
+    activate Builder
+    Builder --> Main : builder
+    deactivate Builder
+
+    Main -> Builder : construir()
+    activate Builder
+    Builder -> Pedido2 : new Pedido(builder)
+    activate Pedido2
+    Pedido2 --> Builder : pedido2
+    deactivate Pedido2
+    Builder --> Main : pedido2
+    deactivate Builder
+
+    Main -> Pedido2 : mostrarResumen()
+    activate Pedido2
+    Pedido2 --> Main : resumen completo mostrado
+    deactivate Pedido2
+
+    Main -> Pedido2 : calcularTotal()
+    activate Pedido2
+    Pedido2 --> Main : total con extras
+    deactivate Pedido2
+end
+
+== 7. PATRÓN CHAIN OF RESPONSIBILITY - Validar Pedidos ==
+
+group Configurar Cadena de Validadores
+    Main -> ValidadorStock : new ValidadorStock()
+    activate ValidadorStock
+    ValidadorStock --> Main : validadorStock
+    deactivate ValidadorStock
+
+    Main -> ValidadorDireccion : new ValidadorDireccion()
+    activate ValidadorDireccion
+    ValidadorDireccion --> Main : validadorDireccion
+    deactivate ValidadorDireccion
+
+    Main -> ValidadorMonto : new ValidadorMontoPedido()
+    activate ValidadorMonto
+    ValidadorMonto --> Main : validadorMonto
+    deactivate ValidadorMonto
+
+    Main -> ValidadorPago : new ValidadorMetodoPago()
+    activate ValidadorPago
+    ValidadorPago --> Main : validadorPago
+    deactivate ValidadorPago
+
+    Main -> ValidadorStock : setSiguiente(validadorDireccion)
+    activate ValidadorStock
+    ValidadorStock --> Main : cadena configurada
+    deactivate ValidadorStock
+
+    Main -> ValidadorDireccion : setSiguiente(validadorMonto)
+    activate ValidadorDireccion
+    ValidadorDireccion --> Main : cadena configurada
+    deactivate ValidadorDireccion
+
+    Main -> ValidadorMonto : setSiguiente(validadorPago)
+    activate ValidadorMonto
+    ValidadorMonto --> Main : cadena configurada
+    deactivate ValidadorMonto
+end
+
+group Validar Pedido 1
+    Main -> ValidadorStock : validar(pedido1)
+    activate ValidadorStock
+    ValidadorStock -> ValidadorStock : verificar stock
+    ValidadorStock -> ValidadorDireccion : validarSiguiente(pedido1)
+    activate ValidadorDireccion
+    ValidadorDireccion -> ValidadorDireccion : verificar dirección
+    ValidadorDireccion -> ValidadorMonto : validarSiguiente(pedido1)
+    activate ValidadorMonto
+    ValidadorMonto -> ValidadorMonto : verificar monto ($10-$5000)
+    ValidadorMonto -> ValidadorPago : validarSiguiente(pedido1)
+    activate ValidadorPago
+    ValidadorPago -> ValidadorPago : verificar método de pago
+    ValidadorPago --> ValidadorMonto : true
+    deactivate ValidadorPago
+    ValidadorMonto --> ValidadorDireccion : true
+    deactivate ValidadorMonto
+    ValidadorDireccion --> ValidadorStock : true
+    deactivate ValidadorDireccion
+    ValidadorStock --> Main : true (PEDIDO VALIDADO)
+    deactivate ValidadorStock
+    note right: Todos los validadores\naprobaron el pedido
+end
+
+group Validar Pedido 2
+    Main -> ValidadorStock : validar(pedido2)
+    activate ValidadorStock
+    ValidadorStock -> ValidadorStock : verificar stock
+    ValidadorStock -> ValidadorDireccion : validarSiguiente(pedido2)
+    activate ValidadorDireccion
+    ValidadorDireccion -> ValidadorDireccion : verificar dirección
+    ValidadorDireccion -> ValidadorMonto : validarSiguiente(pedido2)
+    activate ValidadorMonto
+    ValidadorMonto -> ValidadorMonto : verificar monto ($10-$5000)
+    ValidadorMonto -> ValidadorPago : validarSiguiente(pedido2)
+    activate ValidadorPago
+    ValidadorPago -> ValidadorPago : verificar método de pago
+    ValidadorPago --> ValidadorMonto : true
+    deactivate ValidadorPago
+    ValidadorMonto --> ValidadorDireccion : true
+    deactivate ValidadorMonto
+    ValidadorDireccion --> ValidadorStock : true
+    deactivate ValidadorDireccion
+    ValidadorStock --> Main : true (PEDIDO VALIDADO)
+    deactivate ValidadorStock
+end
+
+== 8. PATRÓN ADAPTER - Integrar Sistemas de Envío ==
+
+group Envío con DHL (kg)
+    Main -> SistemaDHL : new SistemaDHL()
+    activate SistemaDHL
+    SistemaDHL --> Main : dhl
+    deactivate SistemaDHL
+
+    Main -> AdaptadorDHL : new AdaptadorDHL(dhl)
+    activate AdaptadorDHL
+    AdaptadorDHL --> Main : servicioDHL
+    deactivate AdaptadorDHL
+
+    Main -> AdaptadorDHL : enviarPaquete("Madrid, España", 2.5)
+    activate AdaptadorDHL
+    AdaptadorDHL -> AdaptadorDHL : convertir peso (kg)
+    AdaptadorDHL -> SistemaDHL : shipPackage("Madrid, España", 2.5)
+    activate SistemaDHL
+    SistemaDHL --> AdaptadorDHL : paquete enviado
+    deactivate SistemaDHL
+    AdaptadorDHL --> Main : confirmación
+    deactivate AdaptadorDHL
+
+    Main -> AdaptadorDHL : calcularCosto("Madrid, España", 2.5)
+    activate AdaptadorDHL
+    AdaptadorDHL -> SistemaDHL : calculateShippingPrice(2.5, "Madrid")
+    activate SistemaDHL
+    SistemaDHL --> AdaptadorDHL : precio
+    deactivate SistemaDHL
+    AdaptadorDHL --> Main : $13.00
+    deactivate AdaptadorDHL
+
+    Main -> AdaptadorDHL : obtenerEstado()
+    activate AdaptadorDHL
+    AdaptadorDHL -> SistemaDHL : trackingStatus()
+    activate SistemaDHL
+    SistemaDHL --> AdaptadorDHL : "En tránsito"
+    deactivate SistemaDHL
+    AdaptadorDHL --> Main : "En tránsito"
+    deactivate AdaptadorDHL
+end
+
+group Envío con FedEx (lbs)
+    Main -> SistemaFedEx : new SistemaFedEx()
+    activate SistemaFedEx
+    SistemaFedEx --> Main : fedex
+    deactivate SistemaFedEx
+
+    Main -> AdaptadorFedEx : new AdaptadorFedEx(fedex)
+    activate AdaptadorFedEx
+    AdaptadorFedEx --> Main : servicioFedEx
+    deactivate AdaptadorFedEx
+
+    Main -> AdaptadorFedEx : enviarPaquete("Madrid, España", 2.5)
+    activate AdaptadorFedEx
+    AdaptadorFedEx -> AdaptadorFedEx : convertir kg a lbs (2.5 * 2.20462)
+    AdaptadorFedEx -> SistemaFedEx : sendShipment("Madrid, España", 5.51)
+    activate SistemaFedEx
+    SistemaFedEx --> AdaptadorFedEx : paquete enviado
+    deactivate SistemaFedEx
+    AdaptadorFedEx --> Main : confirmación
+    deactivate AdaptadorFedEx
+
+    Main -> AdaptadorFedEx : calcularCosto("Madrid, España", 2.5)
+    activate AdaptadorFedEx
+    AdaptadorFedEx -> AdaptadorFedEx : convertir a lbs
+    AdaptadorFedEx -> SistemaFedEx : getQuote(5.51)
+    activate SistemaFedEx
+    SistemaFedEx --> AdaptadorFedEx : precio
+    deactivate SistemaFedEx
+    AdaptadorFedEx --> Main : $18.27
+    deactivate AdaptadorFedEx
+
+    Main -> AdaptadorFedEx : obtenerEstado()
+    activate AdaptadorFedEx
+    AdaptadorFedEx -> SistemaFedEx : checkStatus()
+    activate SistemaFedEx
+    SistemaFedEx --> AdaptadorFedEx : "Shipped"
+    deactivate SistemaFedEx
+    AdaptadorFedEx --> Main : "Shipped"
+    deactivate AdaptadorFedEx
+    note right: Conversión: 1 kg = 2.20462 lbs
+end
+
+group Envío con Correos (gramos)
+    Main -> SistemaCorreos : new SistemaCorreos()
+    activate SistemaCorreos
+    SistemaCorreos --> Main : correos
+    deactivate SistemaCorreos
+
+    Main -> AdaptadorCorreos : new AdaptadorCorreos(correos)
+    activate AdaptadorCorreos
+    AdaptadorCorreos --> Main : servicioCorreos
+    deactivate AdaptadorCorreos
+
+    Main -> AdaptadorCorreos : enviarPaquete("Madrid, España", 2.5)
+    activate AdaptadorCorreos
+    AdaptadorCorreos -> AdaptadorCorreos : convertir kg a gramos (2.5 * 1000)
+    AdaptadorCorreos -> SistemaCorreos : enviar("Madrid, España", 2500)
+    activate SistemaCorreos
+    SistemaCorreos --> AdaptadorCorreos : paquete enviado
+    deactivate SistemaCorreos
+    AdaptadorCorreos --> Main : confirmación
+    deactivate AdaptadorCorreos
+
+    Main -> AdaptadorCorreos : calcularCosto("Madrid, España", 2.5)
+    activate AdaptadorCorreos
+    AdaptadorCorreos -> AdaptadorCorreos : convertir a gramos
+    AdaptadorCorreos -> SistemaCorreos : precio(2500)
+    activate SistemaCorreos
+    SistemaCorreos --> AdaptadorCorreos : precio
+    deactivate SistemaCorreos
+    AdaptadorCorreos --> Main : $30.00
+    deactivate AdaptadorCorreos
+
+    Main -> AdaptadorCorreos : obtenerEstado()
+    activate AdaptadorCorreos
+    AdaptadorCorreos -> SistemaCorreos : estado()
+    activate SistemaCorreos
+    SistemaCorreos --> AdaptadorCorreos : "Procesando"
+    deactivate SistemaCorreos
+    AdaptadorCorreos --> Main : "Procesando"
+    deactivate AdaptadorCorreos
+    note right: Conversión: 1 kg = 1000 g
+end
+
+== 9. PATRÓN PROTOTYPE - Clonar Productos ==
+
+group Obtener Registro Singleton
+    Main -> RegistroPrototipos : getInstance()
+    activate RegistroPrototipos
+    RegistroPrototipos -> RegistroPrototipos : crear instancia (si no existe)
+    RegistroPrototipos --> Main : registro
+    deactivate RegistroPrototipos
+end
+
+group Clonar Producto Laptop
+    Main -> RegistroPrototipos : obtenerPrototipo("laptop")
+    activate RegistroPrototipos
+    RegistroPrototipos -> ProductoPrototype1 : clonar()
+    activate ProductoPrototype1
+    ProductoPrototype1 -> ProductoPrototype1 : copy constructor (deep copy)
+    ProductoPrototype1 --> RegistroPrototipos : laptop1 (clon)
+    deactivate ProductoPrototype1
+    RegistroPrototipos --> Main : laptop1
+    deactivate RegistroPrototipos
+
+    Main -> ProductoPrototype1 : setNombre("Laptop Gaming")
+    activate ProductoPrototype1
+    ProductoPrototype1 --> Main : nombre actualizado
+    deactivate ProductoPrototype1
+
+    Main -> ProductoPrototype1 : setPrecio(1299.99)
+    activate ProductoPrototype1
+    ProductoPrototype1 --> Main : precio actualizado
+    deactivate ProductoPrototype1
+
+    Main -> ProductoPrototype1 : agregarEspecificacion("GPU", "RTX 4060")
+    activate ProductoPrototype1
+    ProductoPrototype1 --> Main : especificación agregada
+    deactivate ProductoPrototype1
+
+    Main -> ProductoPrototype1 : mostrarInfo()
+    activate ProductoPrototype1
+    ProductoPrototype1 --> Main : info completa
+    deactivate ProductoPrototype1
+end
+
+group Clonar Otro Producto Laptop
+    Main -> RegistroPrototipos : obtenerPrototipo("laptop")
+    activate RegistroPrototipos
+    RegistroPrototipos -> ProductoPrototype2 : clonar()
+    activate ProductoPrototype2
+    ProductoPrototype2 -> ProductoPrototype2 : copy constructor
+    ProductoPrototype2 --> RegistroPrototipos : laptop2 (clon independiente)
+    deactivate ProductoPrototype2
+    RegistroPrototipos --> Main : laptop2
+    deactivate RegistroPrototipos
+
+    Main -> ProductoPrototype2 : setNombre("Laptop Oficina")
+    activate ProductoPrototype2
+    ProductoPrototype2 --> Main : nombre diferente
+    deactivate ProductoPrototype2
+
+    Main -> ProductoPrototype2 : mostrarInfo()
+    activate ProductoPrototype2
+    ProductoPrototype2 --> Main : info diferente
+    deactivate ProductoPrototype2
+    note right: laptop1 y laptop2 son\nclones independientes\nModificar uno no afecta al otro
+end
+
+== 10. PATRÓN COMPOSITE - Categorías y Paquetes ==
+
+group Crear Jerarquía de Categorías
+    Main -> CatElectronica : new Categoria("Electrónica")
+    activate CatElectronica
+    CatElectronica --> Main : categoriaElectronica
+    deactivate CatElectronica
+
+    Main -> ProductoItem1 : new ProductoItem("MacBook Pro", 1499.99, "Laptop profesional")
+    activate ProductoItem1
+    ProductoItem1 --> Main : item1
+    deactivate ProductoItem1
+
+    Main -> ProductoItem2 : new ProductoItem("iPhone 15", 999.99, "Smartphone")
+    activate ProductoItem2
+    ProductoItem2 --> Main : item2
+    deactivate ProductoItem2
+
+    Main -> CatElectronica : agregar(item1)
+    activate CatElectronica
+    CatElectronica -> CatElectronica : lista.add(item1)
+    CatElectronica --> Main : agregado
+    deactivate CatElectronica
+
+    Main -> CatElectronica : agregar(item2)
+    activate CatElectronica
+    CatElectronica -> CatElectronica : lista.add(item2)
+    CatElectronica --> Main : agregado
+    deactivate CatElectronica
+
+    Main -> CatElectronica : mostrarDetalle(0)
+    activate CatElectronica
+    CatElectronica -> CatElectronica : mostrar categoría
+    CatElectronica -> ProductoItem1 : mostrarDetalle(1)
+    activate ProductoItem1
+    ProductoItem1 --> CatElectronica : info mostrada
+    deactivate ProductoItem1
+    CatElectronica -> ProductoItem2 : mostrarDetalle(1)
+    activate ProductoItem2
+    ProductoItem2 --> CatElectronica : info mostrada
+    deactivate ProductoItem2
+    CatElectronica --> Main : jerarquía completa
+    deactivate CatElectronica
+
+    Main -> CatElectronica : getPrecioTotal()
+    activate CatElectronica
+    CatElectronica -> ProductoItem1 : getPrecioTotal()
+    activate ProductoItem1
+    ProductoItem1 --> CatElectronica : 1499.99
+    deactivate ProductoItem1
+    CatElectronica -> ProductoItem2 : getPrecioTotal()
+    activate ProductoItem2
+    ProductoItem2 --> CatElectronica : 999.99
+    deactivate ProductoItem2
+    CatElectronica -> CatElectronica : sumar precios
+    CatElectronica --> Main : 2499.98 (total recursivo)
+    deactivate CatElectronica
+end
+
+group Crear Paquete con Descuento
+    Main -> PaqueteProductos : new PaqueteProductos("Paquete Gamer", 15.0)
+    activate PaqueteProductos
+    PaqueteProductos --> Main : paquete (15% descuento)
+    deactivate PaqueteProductos
+
+    Main -> PaqueteProductos : agregar(laptop)
+    activate PaqueteProductos
+    PaqueteProductos --> Main : agregado
+    deactivate PaqueteProductos
+
+    Main -> PaqueteProductos : agregar(mouse)
+    activate PaqueteProductos
+    PaqueteProductos --> Main : agregado
+    deactivate PaqueteProductos
+
+    Main -> PaqueteProductos : mostrarDetalle(0)
+    activate PaqueteProductos
+    PaqueteProductos -> PaqueteProductos : mostrar paquete y descuento
+    PaqueteProductos --> Main : detalle completo
+    deactivate PaqueteProductos
+
+    Main -> PaqueteProductos : getPrecioTotal()
+    activate PaqueteProductos
+    PaqueteProductos -> PaqueteProductos : sumar precios (1299.99 + 20)
+    PaqueteProductos -> PaqueteProductos : aplicar 15% descuento
+    PaqueteProductos --> Main : 1121.99 (precio con descuento)
+    deactivate PaqueteProductos
+    note right: Precio original: $1319.99\nDescuento 15%: -$198.00\nPrecio final: $1121.99
+end
+
+== 11. PATRÓN TEMPLATE METHOD - Procesar Pedidos ==
+
+group Procesar Pedido Nacional
+    Main -> ProcNacional : new ProcesadorPedidoNacional()
+    activate ProcNacional
+    ProcNacional --> Main : procesadorNacional
+    deactivate ProcNacional
+
+    Main -> ProcNacional : procesarPedido("ORD-001-NAC", 500.00)
+    activate ProcNacional
+    ProcNacional -> ProcNacional : [1] verificarInventario()
+    ProcNacional -> ProcNacional : [2] calcularCostos()\nSubtotal: $500\nIVA 16%: $80\nEnvío: $5\nTotal: $585
+    ProcNacional -> ProcNacional : [3] procesarPago($585)
+    ProcNacional -> ProcNacional : [4] requiereVerificacionAdicional()?\n→ false (hook method)
+    ProcNacional -> ProcNacional : [5] prepararEnvio()\n→ 3-5 días hábiles
+    ProcNacional -> ProcNacional : [6] notificarCliente()\n→ Email + SMS
+    ProcNacional -> ProcNacional : [7] registrarOperacion()
+    ProcNacional --> Main : pedido procesado
+    deactivate ProcNacional
+    note right: Flujo completo definido\nen template method final
+end
+
+group Procesar Pedido Internacional
+    Main -> ProcInternacional : new ProcesadorPedidoInternacional()
+    activate ProcInternacional
+    ProcInternacional --> Main : procesadorInternacional
+    deactivate ProcInternacional
+
+    Main -> ProcInternacional : procesarPedido("ORD-002-INT", 500.00)
+    activate ProcInternacional
+    ProcInternacional -> ProcInternacional : [1] verificarInventario()
+    ProcInternacional -> ProcInternacional : [2] calcularCostos()\nSubtotal: $500\nIVA 16%: $80\nAranceles 10%: $50\nEnvío: $25\nSeguro 2%: $10\nTotal: $665
+    ProcInternacional -> ProcInternacional : [3] procesarPago($665)
+    ProcInternacional -> ProcInternacional : [4] requiereVerificacionAdicional()?\n→ true (override)
+    ProcInternacional -> ProcInternacional : [4.1] verificacionAdicional()\n→ Dirección válida\n→ Sin restricciones\n→ Cobertura OK
+    ProcInternacional -> ProcInternacional : [5] prepararEnvio()\n→ 7-15 días + docs aduaneros
+    ProcInternacional -> ProcInternacional : [6] notificarCliente()\n→ Con instrucciones aduaneras
+    ProcInternacional -> ProcInternacional : [7] registrarOperacion()
+    ProcInternacional --> Main : pedido internacional procesado
+    deactivate ProcInternacional
+    note right: Verificación adicional\nejecutada (hook activo)
+end
+
+group Procesar Pedido Express
+    Main -> ProcExpress : new ProcesadorPedidoExpress()
+    activate ProcExpress
+    ProcExpress --> Main : procesadorExpress
+    deactivate ProcExpress
+
+    Main -> ProcExpress : procesarPedido("ORD-003-EXP", 500.00)
+    activate ProcExpress
+    ProcExpress -> ProcExpress : [1] verificarInventario()\n→ Verificación RÁPIDA
+    ProcExpress -> ProcExpress : [2] calcularCostos()\nSubtotal: $500\nIVA 16%: $80\nEnvío Express: $15\nTotal: $595
+    ProcExpress -> ProcExpress : [3] procesarPago($595)\n→ Pago PRIORITARIO
+    ProcExpress -> ProcExpress : [4] requiereVerificacionAdicional()?\n→ false
+    ProcExpress -> ProcExpress : [5] prepararEnvio()\n→ 24-48 horas\n→ Prioridad ALTA
+    ProcExpress -> ProcExpress : [6] notificarCliente()\n→ Con hora estimada\n→ Seguimiento en tiempo real
+    ProcExpress -> ProcExpress : [7] registrarOperacion()
+    ProcExpress --> Main : pedido express procesado
+    deactivate ProcExpress
+    note right: Procesamiento rápido\ncon entrega 24-48h
+end
+
+== 12. PATRÓN STATE - Gestión de Estados del Pedido ==
+
+group Crear Pedido y Transiciones
+    Main -> PedidoCtx : new PedidoContext("ORD-STATE-001", 899.99)
+    activate PedidoCtx
+    PedidoCtx -> EstadoNuevo : new EstadoNuevo()
+    activate EstadoNuevo
+    EstadoNuevo --> PedidoCtx : estadoInicial
+    deactivate EstadoNuevo
+    PedidoCtx --> Main : pedido (estado: NUEVO)
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : mostrarEstado()
+    activate PedidoCtx
+    PedidoCtx -> EstadoNuevo : mostrarEstado()
+    activate EstadoNuevo
+    EstadoNuevo --> PedidoCtx : "🆕 NUEVO - Pedido recibido"
+    deactivate EstadoNuevo
+    PedidoCtx --> Main : estado mostrado
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : avanzar()
+    activate PedidoCtx
+    PedidoCtx -> EstadoNuevo : siguiente(context)
+    activate EstadoNuevo
+    EstadoNuevo -> EstadoConfirmado : new EstadoConfirmado()
+    activate EstadoConfirmado
+    EstadoConfirmado --> EstadoNuevo : nuevo estado
+    deactivate EstadoConfirmado
+    EstadoNuevo -> PedidoCtx : setEstado(confirmado)
+    EstadoNuevo --> PedidoCtx : transición completada
+    deactivate EstadoNuevo
+    PedidoCtx --> Main : estado cambiado a CONFIRMADO
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : mostrarEstado()
+    activate PedidoCtx
+    PedidoCtx -> EstadoConfirmado : mostrarEstado()
+    activate EstadoConfirmado
+    EstadoConfirmado --> PedidoCtx : "✓ CONFIRMADO - En proceso de pago"
+    deactivate EstadoConfirmado
+    PedidoCtx --> Main : estado mostrado
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : avanzar()
+    activate PedidoCtx
+    PedidoCtx -> EstadoConfirmado : siguiente(context)
+    activate EstadoConfirmado
+    EstadoConfirmado -> EstadoEnviado : new EstadoEnviado()
+    activate EstadoEnviado
+    EstadoEnviado --> EstadoConfirmado : nuevo estado
+    deactivate EstadoEnviado
+    EstadoConfirmado -> PedidoCtx : setEstado(enviado)
+    EstadoConfirmado --> PedidoCtx : transición completada
+    deactivate EstadoConfirmado
+    PedidoCtx --> Main : estado cambiado a ENVIADO
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : avanzar()
+    activate PedidoCtx
+    PedidoCtx -> EstadoEnviado : siguiente(context)
+    activate EstadoEnviado
+    EstadoEnviado -> EstadoEntregado : new EstadoEntregado()
+    activate EstadoEntregado
+    EstadoEntregado --> EstadoEnviado : nuevo estado
+    deactivate EstadoEntregado
+    EstadoEnviado -> PedidoCtx : setEstado(entregado)
+    EstadoEnviado --> PedidoCtx : transición completada
+    deactivate EstadoEnviado
+    PedidoCtx --> Main : estado cambiado a ENTREGADO
+    deactivate PedidoCtx
+    note right: Flujo exitoso:\nNUEVO → CONFIRMADO\n→ ENVIADO → ENTREGADO
+end
+
+group Cancelar Pedido Nuevo
+    Main -> PedidoCtx : new PedidoContext("ORD-STATE-002", 500.00)
+    activate PedidoCtx
+    PedidoCtx --> Main : pedido2 (NUEVO)
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : cancelar()
+    activate PedidoCtx
+    PedidoCtx -> EstadoNuevo : cancelar(context)
+    activate EstadoNuevo
+    EstadoNuevo -> EstadoCancelado : new EstadoCancelado()
+    activate EstadoCancelado
+    EstadoCancelado --> EstadoNuevo : estado cancelado
+    deactivate EstadoCancelado
+    EstadoNuevo -> PedidoCtx : setEstado(cancelado)
+    EstadoNuevo --> PedidoCtx : "Pedido cancelado (inmediato)"
+    deactivate EstadoNuevo
+    PedidoCtx --> Main : pedido cancelado
+    deactivate PedidoCtx
+    note right: Cancelación inmediata\ndesde estado NUEVO
+end
+
+group Intentar Cancelar Pedido Enviado
+    Main -> PedidoCtx : new PedidoContext("ORD-STATE-003", 300.00)
+    activate PedidoCtx
+    PedidoCtx --> Main : pedido3 (NUEVO)
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : avanzar()
+    activate PedidoCtx
+    PedidoCtx --> Main : CONFIRMADO
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : avanzar()
+    activate PedidoCtx
+    PedidoCtx --> Main : ENVIADO
+    deactivate PedidoCtx
+
+    Main -> PedidoCtx : cancelar()
+    activate PedidoCtx
+    PedidoCtx -> EstadoEnviado : cancelar(context)
+    activate EstadoEnviado
+    EstadoEnviado --> PedidoCtx : "No se puede cancelar: ya enviado"
+    deactivate EstadoEnviado
+    PedidoCtx --> Main : cancelación rechazada
+    deactivate PedidoCtx
+    note right: Estados ENVIADO y ENTREGADO\nno permiten cancelación
+end
+
+Main --> Usuario : FIN DE DEMOSTRACIÓN\n12 PATRONES IMPLEMENTADOS
+deactivate Main
+
+@enduml

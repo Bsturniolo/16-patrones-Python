@@ -1,0 +1,684 @@
+@startuml Diagrama de Clases - Sistema de Comercio Electrónico con 12 Patrones
+
+' Configuración de estilos
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+    BackgroundColor<<Singleton>> LightYellow
+    BackgroundColor<<Factory>> LightBlue
+    BackgroundColor<<Observer>> LightGreen
+    BackgroundColor<<Strategy>> LightCoral
+    BackgroundColor<<Decorator>> Lavender
+    BackgroundColor<<Builder>> LightSalmon
+    BackgroundColor<<Chain>> LightCyan
+    BackgroundColor<<Adapter>> Pink
+    BackgroundColor<<Prototype>> Wheat
+    BackgroundColor<<Composite>> Plum
+    BackgroundColor<<Template>> Khaki
+    BackgroundColor<<State>> LightSkyBlue
+    BorderColor Black
+    ArrowColor Black
+}
+
+title Diagrama de Clases - 12 Patrones de Diseño\nProyecto: Sistema de Comercio Electrónico
+
+' ====================================
+' PAQUETE CREACIONAL
+' ====================================
+package "patrones.creacional" {
+
+    ' PATRÓN SINGLETON
+    package "singleton" <<Rectangle>> {
+        class DatabaseConnection <<Singleton>> {
+            - {static} instance : DatabaseConnection
+            - connectionString : String
+            - DatabaseConnection()
+            + {static} getInstance() : DatabaseConnection
+            + query(sql : String) : void
+        }
+
+        note right of DatabaseConnection
+          <b>Patrón Singleton</b>
+          Garantiza una única instancia
+          de conexión a la base de datos
+        end note
+    }
+
+    ' PATRÓN FACTORY
+    package "factory" <<Rectangle>> {
+        abstract class Producto <<Factory>> {
+            # nombre : String
+            # precio : double
+            + Producto(nombre : String, precio : double)
+            + {abstract} mostrarInfo() : void
+            + getNombre() : String
+            + getPrecio() : double
+        }
+
+        class Libro {
+            - autor : String
+            + Libro(nombre : String, precio : double, autor : String)
+            + mostrarInfo() : void
+        }
+
+        class Electronico {
+            - garantiaMeses : int
+            + Electronico(nombre : String, precio : double, garantiaMeses : int)
+            + mostrarInfo() : void
+        }
+
+        class ProductoFactory <<Factory>> {
+            + {static} crearProducto(tipo : String, nombre : String, precio : double) : Producto
+            + {static} crearLibro(nombre : String, precio : double, autor : String) : Libro
+            + {static} crearElectronico(nombre : String, precio : double, garantia : int) : Electronico
+        }
+
+        Producto <|-- Libro
+        Producto <|-- Electronico
+        ProductoFactory ..> Producto : <<creates>>
+        ProductoFactory ..> Libro : <<creates>>
+        ProductoFactory ..> Electronico : <<creates>>
+
+        note right of ProductoFactory
+          <b>Patrón Factory</b>
+          Encapsula la creación de
+          diferentes tipos de productos
+        end note
+    }
+
+    ' PATRÓN BUILDER
+    package "builder" <<Rectangle>> {
+        class Pedido <<Builder>> {
+            - productos : List<Producto>
+            - direccionEnvio : String
+            - metodoEnvio : String
+            - esRegalo : boolean
+            - mensajeRegalo : String
+            - envolturaRegalo : boolean
+            - notasEspeciales : String
+            - Pedido(builder : PedidoBuilder)
+            + mostrarResumen() : void
+            + calcularTotal() : double
+            + getDireccionEnvio() : String
+            + getMetodoEnvio() : String
+        }
+
+        class PedidoBuilder {
+            - productos : List<Producto>
+            - direccionEnvio : String
+            - metodoEnvio : String
+            - esRegalo : boolean
+            - mensajeRegalo : String
+            - envolturaRegalo : boolean
+            - notasEspeciales : String
+            + PedidoBuilder(productos : List<Producto>, direccion : String)
+            + conMetodoEnvio(metodo : String) : PedidoBuilder
+            + esRegalo(esRegalo : boolean) : PedidoBuilder
+            + conMensajeRegalo(mensaje : String) : PedidoBuilder
+            + conEnvolturaRegalo(envoltura : boolean) : PedidoBuilder
+            + conNotasEspeciales(notas : String) : PedidoBuilder
+            + construir() : Pedido
+        }
+
+        Pedido +-- PedidoBuilder
+        Pedido o--> "0..*" Producto : contiene
+
+        note right of Pedido
+          <b>Patrón Builder</b>
+          Construye pedidos complejos
+          con múltiples opciones
+        end note
+    }
+
+    ' PATRÓN PROTOTYPE
+    package "prototype" <<Rectangle>> {
+        interface "Prototype<T>" <<Prototype>> {
+            + clonar() : T
+        }
+
+        class ProductoPrototype <<Prototype>> {
+            - nombre : String
+            - precio : double
+            - categoria : String
+            - especificaciones : Map<String, String>
+            + ProductoPrototype(nombre : String, precio : double, categoria : String)
+            - ProductoPrototype(original : ProductoPrototype)
+            + clonar() : ProductoPrototype
+            + setNombre(nombre : String) : void
+            + setPrecio(precio : double) : void
+            + agregarEspecificacion(clave : String, valor : String) : void
+            + getNombre() : String
+            + getPrecio() : double
+            + getCategoria() : String
+            + getEspecificaciones() : Map<String, String>
+            + mostrarInfo() : void
+        }
+
+        class RegistroPrototipos <<Prototype>> {
+            - {static} instancia : RegistroPrototipos
+            - prototipos : Map<String, ProductoPrototype>
+            - RegistroPrototipos()
+            + {static} getInstance() : RegistroPrototipos
+            + obtenerPrototipo(tipo : String) : ProductoPrototype
+            - inicializarPrototipos() : void
+        }
+
+        "Prototype<T>" <|.. ProductoPrototype
+        RegistroPrototipos o--> "0..*" ProductoPrototype : gestiona
+
+        note right of RegistroPrototipos
+          <b>Patrón Prototype</b>
+          Clona productos base para crear
+          variantes sin crear desde cero
+        end note
+    }
+}
+
+' ====================================
+' PAQUETE ESTRUCTURAL
+' ====================================
+package "patrones.estructural" {
+
+    ' PATRÓN DECORATOR
+    package "decorator" <<Rectangle>> {
+        abstract class ProductoDecorador <<Decorator>> {
+            # productoDecorado : Producto
+            + ProductoDecorador(producto : Producto)
+            + {abstract} mostrarInfo() : void
+            + {abstract} getPrecio() : double
+            + {abstract} getNombre() : String
+        }
+
+        class EnvolturaRegaloDecorador {
+            - {static} COSTO_ENVOLTURA : double = 3.50
+            + EnvolturaRegaloDecorador(producto : Producto)
+            + mostrarInfo() : void
+            + getPrecio() : double
+            + getNombre() : String
+        }
+
+        class SeguroDecorador {
+            - {static} PORCENTAJE_SEGURO : double = 0.10
+            + SeguroDecorador(producto : Producto)
+            + mostrarInfo() : void
+            + getPrecio() : double
+            + getNombre() : String
+        }
+
+        class GarantiaExtendidaDecorador {
+            - mesesExtra : int
+            - {static} COSTO_POR_MES : double = 2.50
+            + GarantiaExtendidaDecorador(producto : Producto, meses : int)
+            + mostrarInfo() : void
+            + getPrecio() : double
+            + getNombre() : String
+        }
+
+        Producto <|-- ProductoDecorador
+        ProductoDecorador <|-- EnvolturaRegaloDecorador
+        ProductoDecorador <|-- SeguroDecorador
+        ProductoDecorador <|-- GarantiaExtendidaDecorador
+        ProductoDecorador o--> "1" Producto : decora
+
+        note right of ProductoDecorador
+          <b>Patrón Decorator</b>
+          Agrega funcionalidades adicionales
+          a productos de forma dinámica
+        end note
+    }
+
+    ' PATRÓN ADAPTER
+    package "adapter" <<Rectangle>> {
+        interface ServicioEnvio <<Adapter>> {
+            + enviarPaquete(direccion : String, peso : double) : void
+            + calcularCosto(direccion : String, peso : double) : double
+            + obtenerEstado() : String
+        }
+
+        class SistemaDHL {
+            + shipPackage(destination : String, weightKg : double) : void
+            + calculateShippingPrice(weightKg : double, zone : String) : double
+            + trackingStatus() : String
+        }
+
+        class SistemaFedEx {
+            + sendShipment(address : String, pounds : double) : void
+            + getQuote(pounds : double) : double
+            + checkStatus() : String
+        }
+
+        class SistemaCorreos {
+            + enviar(destino : String, gramos : int) : void
+            + precio(gramos : int) : double
+            + estado() : String
+        }
+
+        class AdaptadorDHL {
+            - sistemaDHL : SistemaDHL
+            + AdaptadorDHL(sistema : SistemaDHL)
+            + enviarPaquete(direccion : String, peso : double) : void
+            + calcularCosto(direccion : String, peso : double) : double
+            + obtenerEstado() : String
+        }
+
+        class AdaptadorFedEx {
+            - sistemaFedEx : SistemaFedEx
+            + AdaptadorFedEx(sistema : SistemaFedEx)
+            + enviarPaquete(direccion : String, peso : double) : void
+            + calcularCosto(direccion : String, peso : double) : double
+            + obtenerEstado() : String
+        }
+
+        class AdaptadorCorreos {
+            - sistemaCorreos : SistemaCorreos
+            + AdaptadorCorreos(sistema : SistemaCorreos)
+            + enviarPaquete(direccion : String, peso : double) : void
+            + calcularCosto(direccion : String, peso : double) : double
+            + obtenerEstado() : String
+        }
+
+        ServicioEnvio <|.. AdaptadorDHL
+        ServicioEnvio <|.. AdaptadorFedEx
+        ServicioEnvio <|.. AdaptadorCorreos
+        AdaptadorDHL o--> "1" SistemaDHL : adapta
+        AdaptadorFedEx o--> "1" SistemaFedEx : adapta
+        AdaptadorCorreos o--> "1" SistemaCorreos : adapta
+
+        note right of ServicioEnvio
+          <b>Patrón Adapter</b>
+          Integra sistemas de envío
+          con interfaces incompatibles
+        end note
+    }
+
+    ' PATRÓN COMPOSITE
+    package "composite" <<Rectangle>> {
+        abstract class ComponenteCatalogo <<Composite>> {
+            # nombre : String
+            + ComponenteCatalogo(nombre : String)
+            + {abstract} mostrarDetalle(nivel : int) : void
+            + {abstract} getPrecioTotal() : double
+            + getNombre() : String
+            + agregar(componente : ComponenteCatalogo) : void
+            + remover(componente : ComponenteCatalogo) : void
+        }
+
+        class ProductoItem <<Composite>> {
+            - precio : double
+            - descripcion : String
+            + ProductoItem(nombre : String, precio : double, descripcion : String)
+            + mostrarDetalle(nivel : int) : void
+            + getPrecioTotal() : double
+        }
+
+        class Categoria <<Composite>> {
+            - hijos : List<ComponenteCatalogo>
+            + Categoria(nombre : String)
+            + agregar(componente : ComponenteCatalogo) : void
+            + remover(componente : ComponenteCatalogo) : void
+            + mostrarDetalle(nivel : int) : void
+            + getPrecioTotal() : double
+        }
+
+        class PaqueteProductos <<Composite>> {
+            - hijos : List<ComponenteCatalogo>
+            - porcentajeDescuento : double
+            + PaqueteProductos(nombre : String, descuento : double)
+            + agregar(componente : ComponenteCatalogo) : void
+            + remover(componente : ComponenteCatalogo) : void
+            + mostrarDetalle(nivel : int) : void
+            + getPrecioTotal() : double
+            + getPrecioSinDescuento() : double
+            + getAhorro() : double
+        }
+
+        ComponenteCatalogo <|-- ProductoItem
+        ComponenteCatalogo <|-- Categoria
+        ComponenteCatalogo <|-- PaqueteProductos
+        Categoria o--> "0..*" ComponenteCatalogo : contiene
+        PaqueteProductos o--> "0..*" ComponenteCatalogo : contiene
+
+        note right of ComponenteCatalogo
+          <b>Patrón Composite</b>
+          Organiza productos en jerarquías
+          y paquetes con descuento
+        end note
+    }
+}
+
+' ====================================
+' PAQUETE COMPORTAMIENTO
+' ====================================
+package "patrones.comportamiento" {
+
+    ' PATRÓN OBSERVER
+    package "observer" <<Rectangle>> {
+        interface Observer <<Observer>> {
+            + actualizar(mensaje : String) : void
+        }
+
+        class Cliente {
+            - nombre : String
+            + Cliente(nombre : String)
+            + actualizar(mensaje : String) : void
+            + getNombre() : String
+        }
+
+        class Tienda <<Observer>> {
+            - clientes : List<Observer>
+            - nombre : String
+            + Tienda(nombre : String)
+            + suscribir(cliente : Observer) : void
+            + desuscribir(cliente : Observer) : void
+            + notificarClientes(mensaje : String) : void
+            + nuevaOferta(descripcion : String) : void
+        }
+
+        Observer <|.. Cliente
+        Tienda o--> "0..*" Observer : observa
+
+        note right of Tienda
+          <b>Patrón Observer</b>
+          Subject que notifica a
+          múltiples observadores
+        end note
+    }
+
+    ' PATRÓN STRATEGY
+    package "strategy" <<Rectangle>> {
+        interface EstrategiaPago <<Strategy>> {
+            + pagar(monto : double) : void
+        }
+
+        class PagoTarjeta {
+            - numeroTarjeta : String
+            + PagoTarjeta(numeroTarjeta : String)
+            + pagar(monto : double) : void
+        }
+
+        class PagoEfectivo {
+            - {static} DESCUENTO : double = 0.05
+            + pagar(monto : double) : void
+        }
+
+        class PagoPayPal {
+            - email : String
+            + PagoPayPal(email : String)
+            + pagar(monto : double) : void
+        }
+
+        class CarritoCompra <<Strategy>> {
+            - productos : List<Producto>
+            - estrategiaPago : EstrategiaPago
+            + CarritoCompra()
+            + agregarProducto(producto : Producto) : void
+            + setEstrategiaPago(estrategia : EstrategiaPago) : void
+            + calcularTotal() : double
+            + checkout() : void
+        }
+
+        EstrategiaPago <|.. PagoTarjeta
+        EstrategiaPago <|.. PagoEfectivo
+        EstrategiaPago <|.. PagoPayPal
+        CarritoCompra o--> "1" EstrategiaPago : usa
+        CarritoCompra o--> "0..*" Producto : contiene
+
+        note right of CarritoCompra
+          <b>Patrón Strategy</b>
+          Context que utiliza diferentes
+          estrategias de pago intercambiables
+        end note
+    }
+
+    ' PATRÓN CHAIN OF RESPONSIBILITY
+    package "chain" <<Rectangle>> {
+        abstract class ValidadorPedido <<Chain>> {
+            # siguiente : ValidadorPedido
+            + setSiguiente(siguiente : ValidadorPedido) : void
+            + {abstract} validar(pedido : Pedido) : boolean
+            # validarSiguiente(pedido : Pedido) : boolean
+        }
+
+        class ValidadorStock {
+            + validar(pedido : Pedido) : boolean
+        }
+
+        class ValidadorDireccion {
+            + validar(pedido : Pedido) : boolean
+        }
+
+        class ValidadorMontoPedido {
+            - {static} MONTO_MINIMO : double = 10.00
+            - {static} MONTO_MAXIMO : double = 5000.00
+            + validar(pedido : Pedido) : boolean
+        }
+
+        class ValidadorMetodoPago {
+            + validar(pedido : Pedido) : boolean
+        }
+
+        ValidadorPedido <|-- ValidadorStock
+        ValidadorPedido <|-- ValidadorDireccion
+        ValidadorPedido <|-- ValidadorMontoPedido
+        ValidadorPedido <|-- ValidadorMetodoPago
+        ValidadorPedido o--> "0..1" ValidadorPedido : siguiente
+        ValidadorPedido ..> Pedido : valida
+
+        note right of ValidadorPedido
+          <b>Patrón Chain of Responsibility</b>
+          Valida pedidos en cadena
+          de forma secuencial
+        end note
+    }
+
+    ' PATRÓN TEMPLATE METHOD
+    package "template" <<Rectangle>> {
+        abstract class ProcesadorPedido <<Template>> {
+            + {final} procesarPedido(numeroPedido : String, monto : double) : void
+            # {abstract} verificarInventario() : void
+            # {abstract} calcularCostos(monto : double) : void
+            # {abstract} procesarPago(monto : double) : void
+            # {abstract} prepararEnvio() : void
+            # {abstract} notificarCliente(numeroPedido : String) : void
+            # {abstract} registrarOperacion(numeroPedido : String, monto : double) : void
+            # requiereVerificacionAdicional() : boolean
+            # verificacionAdicional() : void
+        }
+
+        class ProcesadorPedidoNacional {
+            - {static} IVA : double = 0.16
+            - {static} COSTO_ENVIO : double = 5.00
+            # verificarInventario() : void
+            # calcularCostos(monto : double) : void
+            # procesarPago(monto : double) : void
+            # prepararEnvio() : void
+            # notificarCliente(numeroPedido : String) : void
+            # registrarOperacion(numeroPedido : String, monto : double) : void
+        }
+
+        class ProcesadorPedidoInternacional {
+            - {static} IVA : double = 0.16
+            - {static} ARANCELES : double = 0.10
+            - {static} COSTO_ENVIO : double = 25.00
+            - {static} SEGURO : double = 0.02
+            # verificarInventario() : void
+            # calcularCostos(monto : double) : void
+            # procesarPago(monto : double) : void
+            # prepararEnvio() : void
+            # notificarCliente(numeroPedido : String) : void
+            # registrarOperacion(numeroPedido : String, monto : double) : void
+            # requiereVerificacionAdicional() : boolean
+            # verificacionAdicional() : void
+        }
+
+        class ProcesadorPedidoExpress {
+            - {static} IVA : double = 0.16
+            - {static} COSTO_ENVIO_EXPRESS : double = 15.00
+            # verificarInventario() : void
+            # calcularCostos(monto : double) : void
+            # procesarPago(monto : double) : void
+            # prepararEnvio() : void
+            # notificarCliente(numeroPedido : String) : void
+            # registrarOperacion(numeroPedido : String, monto : double) : void
+        }
+
+        ProcesadorPedido <|-- ProcesadorPedidoNacional
+        ProcesadorPedido <|-- ProcesadorPedidoInternacional
+        ProcesadorPedido <|-- ProcesadorPedidoExpress
+
+        note right of ProcesadorPedido
+          <b>Patrón Template Method</b>
+          Define flujo de procesamiento
+          con pasos personalizables
+        end note
+    }
+
+    ' PATRÓN STATE
+    package "state" <<Rectangle>> {
+        interface EstadoPedido <<State>> {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        class PedidoContext <<State>> {
+            - numeroPedido : String
+            - monto : double
+            - estado : EstadoPedido
+            + PedidoContext(numeroPedido : String, monto : double)
+            + setEstado(estado : EstadoPedido) : void
+            + getEstado() : EstadoPedido
+            + avanzar() : void
+            + retroceder() : void
+            + cancelar() : void
+            + mostrarEstado() : void
+            + getNumeroPedido() : String
+            + getMonto() : double
+        }
+
+        class EstadoNuevo {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        class EstadoConfirmado {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        class EstadoEnviado {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        class EstadoEntregado {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        class EstadoCancelado {
+            + siguiente(contexto : PedidoContext) : void
+            + anterior(contexto : PedidoContext) : void
+            + cancelar(contexto : PedidoContext) : void
+            + mostrarEstado() : void
+            + getNombreEstado() : String
+        }
+
+        EstadoPedido <|.. EstadoNuevo
+        EstadoPedido <|.. EstadoConfirmado
+        EstadoPedido <|.. EstadoEnviado
+        EstadoPedido <|.. EstadoEntregado
+        EstadoPedido <|.. EstadoCancelado
+        PedidoContext o--> "1" EstadoPedido : estado actual
+
+        note right of PedidoContext
+          <b>Patrón State</b>
+          Gestiona ciclo de vida del pedido
+          con transiciones válidas
+        end note
+    }
+}
+
+' ====================================
+' CLASE PRINCIPAL
+' ====================================
+class Main {
+    + {static} main(args : String[]) : void
+}
+
+' Relaciones de Main con los patrones
+Main ..> DatabaseConnection : usa
+Main ..> ProductoFactory : usa
+Main ..> Tienda : usa
+Main ..> Cliente : usa
+Main ..> CarritoCompra : usa
+Main ..> PagoTarjeta : usa
+Main ..> PagoEfectivo : usa
+Main ..> PagoPayPal : usa
+Main ..> ProductoDecorador : usa
+Main ..> EnvolturaRegaloDecorador : usa
+Main ..> SeguroDecorador : usa
+Main ..> GarantiaExtendidaDecorador : usa
+Main ..> Pedido : usa
+Main ..> ValidadorPedido : usa
+Main ..> ServicioEnvio : usa
+Main ..> AdaptadorDHL : usa
+Main ..> AdaptadorFedEx : usa
+Main ..> AdaptadorCorreos : usa
+Main ..> RegistroPrototipos : usa
+Main ..> ProductoPrototype : usa
+Main ..> ComponenteCatalogo : usa
+Main ..> Categoria : usa
+Main ..> PaqueteProductos : usa
+Main ..> ProductoItem : usa
+Main ..> ProcesadorPedido : usa
+Main ..> ProcesadorPedidoNacional : usa
+Main ..> ProcesadorPedidoInternacional : usa
+Main ..> ProcesadorPedidoExpress : usa
+Main ..> PedidoContext : usa
+Main ..> EstadoPedido : usa
+
+' ====================================
+' LEYENDA
+' ====================================
+legend bottom left
+  <b>Sistema de Comercio Electrónico - 12 Patrones de Diseño</b>
+
+  <b>Patrones Creacionales (4):</b>
+  <color:LightYellow>█</color> <b>Singleton</b> - DatabaseConnection (patrones.creacional.singleton)
+  <color:LightBlue>█</color> <b>Factory</b> - ProductoFactory + Producto/Libro/Electronico (patrones.creacional.factory)
+  <color:LightSalmon>█</color> <b>Builder</b> - Pedido + PedidoBuilder (patrones.creacional.builder)
+  <color:Wheat>█</color> <b>Prototype</b> - Prototype<T> + ProductoPrototype + RegistroPrototipos (patrones.creacional.prototype)
+
+  <b>Patrones Estructurales (3):</b>
+  <color:Lavender>█</color> <b>Decorator</b> - ProductoDecorador + 3 decoradores concretos (patrones.estructural.decorator)
+  <color:Pink>█</color> <b>Adapter</b> - ServicioEnvio + 3 sistemas + 3 adaptadores (patrones.estructural.adapter)
+  <color:Plum>█</color> <b>Composite</b> - ComponenteCatalogo + ProductoItem + Categoria + PaqueteProductos (patrones.estructural.composite)
+
+  <b>Patrones de Comportamiento (5):</b>
+  <color:LightGreen>█</color> <b>Observer</b> - Tienda/Cliente/Observer (patrones.comportamiento.observer)
+  <color:LightCoral>█</color> <b>Strategy</b> - CarritoCompra + 3 estrategias de pago (patrones.comportamiento.strategy)
+  <color:LightCyan>█</color> <b>Chain of Responsibility</b> - ValidadorPedido + 4 validadores (patrones.comportamiento.chain)
+  <color:Khaki>█</color> <b>Template Method</b> - ProcesadorPedido + 3 procesadores concretos (patrones.comportamiento.template)
+  <color:LightSkyBlue>█</color> <b>State</b> - EstadoPedido + PedidoContext + 5 estados (patrones.comportamiento.state)
+
+  <b>Total:</b> 49 clases Java organizadas en 12 paquetes
+  <b>Main.java:</b> Demostración completa de los 12 patrones (~350 líneas)
+  <b>Versión:</b> 2.0 - Octubre 2025
+end legend
+
+@enduml
